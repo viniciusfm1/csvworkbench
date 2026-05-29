@@ -26,6 +26,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+.venv/
+__pycache__/
+*.egg-info/
+dist/
+.ruff_cache/
+.mypy_cache/
+
 # PyInstaller
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
