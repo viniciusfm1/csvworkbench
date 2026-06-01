@@ -43,7 +43,7 @@ class CSVFile(BaseModel):
     encoding: str
     encoding_confidence: float = Field(ge=0.0, le=1.0)
     sep: str
-    quotechar: str
+    quotechar: str | None
     headers: list[str]
     rows: list[list[str]]
     data_row_count: int = 0
@@ -183,9 +183,9 @@ class DiagnosticReport(BaseModel):
     encoding_confidence : float
         Detector confidence in [0.0, 1.0].
     delimiter : str
-        Single character used as the field separator. :IMPORTANTE: é single mesmo? 
+        Character used as the field separator.
     quotechar : str
-        Single character used for quoting fields. :IMPORTANTE: é single mesmo? 
+        Single character used for quoting fields.
     column_count : int
         Number of columns inferred from the header row.
     row_count : int
@@ -217,7 +217,7 @@ class DiagnosticReport(BaseModel):
     file_path: Path | Literal['<stdin>']
     encoding: str = Field(min_length=1)
     encoding_confidence: float = Field(ge=0.0, le=1.0)
-    delimiter: str = Field(min_length=1, max_length=1)
+    delimiter: str = Field(min_length=1)
     quotechar: str = Field(min_length=1, max_length=1)
     column_count: int = Field(ge=0)
     row_count: int = Field(ge=0)
@@ -230,11 +230,11 @@ class DiagnosticReport(BaseModel):
     # Validators
     # ------------------------------------------------------------------
 
-    @field_validator('encoding') # :IMPORTANTE: incluir aqui a formatacao utf_8 -> utf-8 ?
+    @field_validator('encoding')
     @classmethod
     def _normalise_encoding(cls, v: str) -> str:
         """Lowercase and strip encoding names for consistent comparisons."""
-        return v.strip().lower()
+        return v.strip().lower().replace('_', '-')
  
     @model_validator(mode='after')
     def _issues_sorted(self) -> 'DiagnosticReport':

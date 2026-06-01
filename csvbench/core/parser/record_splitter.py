@@ -157,4 +157,4 @@ class RecordSplitter:
                 )
             )
             if should_emit_final_record:
-                yield
+                yield record

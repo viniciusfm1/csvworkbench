@@ -47,6 +47,12 @@ class FieldSplitter:
         list of str
             Ordered list of field values extracted from *line*.
         """
+        if line is None:
+            raise TypeError(
+                f'split() expected a str, got None. '
+                f'Check that the line reader is not passing empty iterator results.'
+            )
+
         sep = self._sep
         sep_len = self._sep_len
         quotechar = self._quotechar
