@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
 
 from rich.console import Console
@@ -13,14 +11,6 @@ from rich import box
 from csvbench.cli.formatters.base import BaseFormatter
 from csvbench.core.models import DiagnosticReport, Issue, Severity
 
-
-# ----------------------------------------------------------------------
-# Module-level consoles
-# ----------------------------------------------------------------------
-# Two separate Console instances so that normal output and error output
-# never interleave, even when both go to a terminal.  stderr=True routes
-# render_error() away from stdout pipes.
-
 _stdout_console = Console(highlight=False)
 _stderr_console = Console(stderr=True, highlight=False)
 
@@ -29,8 +19,7 @@ class RichFormatter(BaseFormatter):
     """Render diagnostic reports as styled Rich terminal output.
 
     Uses a summary panel for file metadata and a separate table for
-    issues.  Respects the ``NO_COLOR`` environment variable via Rich's
-    built-in detection — no explicit wiring needed.
+    issues.
 
     Parameters
     ----------
@@ -55,10 +44,6 @@ class RichFormatter(BaseFormatter):
         verbose: bool = False,
     ) -> None:
         super().__init__(output=output, quiet=quiet, verbose=verbose)
-
-    # ------------------------------------------------------------------
-    # Public interface
-    # ------------------------------------------------------------------
 
     def render(self, report: DiagnosticReport) -> None:
         """Render a diagnostic report to the terminal.
@@ -112,10 +97,6 @@ class RichFormatter(BaseFormatter):
             )
         )
 
-    # ------------------------------------------------------------------
-    # Private rendering helpers
-    # ------------------------------------------------------------------
-
     def _render_quiet(self, report: DiagnosticReport) -> None:
         """Print a single PASS / FAIL summary line.
 
@@ -152,18 +133,18 @@ class RichFormatter(BaseFormatter):
             Completed inspection report.
         """
         rows: list[tuple[str, str]] = [
-            ('📁 Arquivo', report.display_path),
+            ('📁 File', report.display_path),
             ('🔤 Encoding', (
                 f'{report.encoding}  '
                 f'[dim]({report.encoding_confidence * 100:.0f}% confidence)[/dim]'
             )),
-            ('🔀 Separador', repr(report.delimiter)),
+            ('🔀 Separator', repr(report.delimiter)),
             ('💬 Quotechar', repr(report.quotechar)),
-            ('📊 Colunas', str(report.column_count)),
-            ('📈 Linhas', str(report.row_count)),
-            ('❌ Erros', _coloured_count(report.error_count, 'red')),
-            ('⚠️  Avisos', _coloured_count(report.warning_count, 'yellow')),
-            ('⏱️  Tempo', f'{report.elapsed_seconds:.4f}s'),
+            ('📊 Columns', str(report.column_count)),
+            ('📈 Lines', str(report.row_count)),
+            ('❌ Errors', _coloured_count(report.error_count, 'red')),
+            ('⚠️  Warnings', _coloured_count(report.warning_count, 'yellow')),
+            ('⏱️  Elapsed', f'{report.elapsed_seconds:.4f}s'),
         ]
 
         grid = Table.grid(padding=(0, 2))
@@ -201,13 +182,13 @@ class RichFormatter(BaseFormatter):
         )
 
         table.add_column('#', style='dim', justify='right', width=4)
-        table.add_column('Severidade', justify='left', width=10)
-        table.add_column('Código', justify='left', width=22)
-        table.add_column('Linha', justify='right', width=7)
-        table.add_column('Detalhe', justify='left')
+        table.add_column('Severity', justify='left', width=10)
+        table.add_column('Code', justify='left', width=22)
+        table.add_column('Line', justify='right', width=7)
+        table.add_column('Detail', justify='left')
 
         if self.verbose:
-            table.add_column('Sugestão', justify='left', style='dim')
+            table.add_column('Suggestion', justify='left', style='dim')
 
         for idx, issue in enumerate(issues, start=1):
             severity_text = _severity_label(issue.severity)
@@ -227,11 +208,6 @@ class RichFormatter(BaseFormatter):
             table.add_row(*row)
 
         _stdout_console.print(table)
-
-
-# ----------------------------------------------------------------------
-# Module-level helpers
-# ----------------------------------------------------------------------
 
 def _severity_label(severity: Severity) -> Text:
     """Return a coloured Rich Text label for a severity level.

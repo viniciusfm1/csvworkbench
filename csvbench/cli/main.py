@@ -14,7 +14,7 @@ app = typer.Typer(
         '[bold]csvbench[/bold] — diagnose and repair malformed CSV files.\n\n'
         'Run any command with [green]--help[/green] for detailed usage.'
     ),
-    epilog='Docs & source: [blue]https://github.com/you/csvbench[/blue]',
+    epilog='Docs & source: [blue]https://github.com/viniciusfm1/csvworkbench[/blue]',
     rich_markup_mode='rich',
     no_args_is_help=True,
     pretty_exceptions_enable=True,
