@@ -4,11 +4,7 @@ from pathlib import Path
 import time
 from typing import TYPE_CHECKING
 
-from csvbench.core.detectors import (
-    DelimiterDetector, 
-    EncodingDetector, 
-    TextDelimiterDetector
-)
+from csvbench.core.detectors import *
 from csvbench.core.parser import RecordSplitter, FieldSplitter
 from csvbench.core.models import CSVFile, DiagnosticReport, Issue, Severity
 
@@ -35,9 +31,6 @@ class CsvWorkbench:
     def __init__(self, path: Path | str) -> None:
         self._path = Path(path)
         self._data: CSVFile | None = None
-        self._encoding_detector = EncodingDetector()
-        self._delimiter_detector = DelimiterDetector()
-        self._quotechar_detector = TextDelimiterDetector()
 
     def read(
         self,
@@ -84,43 +77,38 @@ class CsvWorkbench:
         if not self._path.exists():
             raise FileNotFoundError(self._path)
 
-        encoding_result = (
-            self._encoding_detector.detect(self._path).name
-            if encoding is None
-            else encoding
-        )
+        if encoding is None:
+            encoding_result = EncodingDetector().detect(self._path)
+        else:
+            encoding_result = EncodingResult(name=encoding, confidence=1.0, method='override')
 
-        delimiter_result = (
-            self._delimiter_detector.detect(
-                path=self._path,
-                encoding_result=encoding_result,
-            ).sep
-            if sep is None
-            else sep
-        )
+        if sep is None:
+            delimiter_result = DelimiterDetector().detect(self._path, encoding=encoding_result.name)
+        else:
+            delimiter_result = DelimiterResult(sep=sep, confidence=1.0, method='override')
 
-        quotechar_result = (
-            self._quotechar_detector.detect(
-                path=self._path,
-                encoding_result=encoding_result,
-                sep=delimiter_result
-            ).detected
-            if quotechar is None
-            else quotechar
-        )
+        if quotechar is None:
+            quotechar_result = TextDelimiterDetector().detect(path=self._path, encoding=encoding_result.name, sep=delimiter_result.sep)
+        else:
+            quotechar_result = TextDelimiterResult(detected=quotechar, confidence=1.0, method='override')
 
         headers, rows = self._parse(
-            encoding=encoding_result,
-            sep=delimiter_result,
-            quotechar=quotechar_result,
+            encoding=encoding_result.name,
+            sep=delimiter_result.sep,
+            quotechar=quotechar_result.detected,
         )
 
         self._data = CSVFile(
             path=self._path.resolve(),
-            encoding=encoding_result,
-            encoding_confidence=0.0, # resolver: é necessário aqui/agora ?
-            sep=delimiter_result,
-            quotechar=quotechar_result,
+            encoding=encoding_result.name,
+            encoding_confidence=encoding_result.confidence,
+            encoding_method=encoding_result.method,
+            delimiter=delimiter_result.sep,
+            delimiter_confidence=delimiter_result.confidence,
+            delimiter_method=delimiter_result.method,
+            quotechar=quotechar_result.detected,
+            quotechar_confidence=quotechar_result.confidence,
+            quotechar_method=quotechar_result.method,
             headers=headers,
             rows=rows,
         )
@@ -223,8 +211,13 @@ class CsvWorkbench:
             file_path=self.data.path,
             encoding=self.data.encoding,
             encoding_confidence=self.data.encoding_confidence,
-            delimiter=self.data.sep,
+            encoding_method=self.data.encoding_method,
+            delimiter=self.data.delimiter,
+            delimiter_confidence=self.data.delimiter_confidence,
+            delimiter_method=self.data.delimiter_method,
             quotechar=self.data.quotechar,
+            quotechar_confidence=self.data.quotechar_confidence,
+            quotechar_method=self.data.quotechar_method,
             column_count=len(self.data.headers),
             row_count=self.data.data_row_count,
             issues=issues,

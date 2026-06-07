@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import AliasChoices, BaseModel, Field, model_validator, field_validator
 from enum import Enum
 
 if TYPE_CHECKING:
@@ -20,8 +20,12 @@ class CSVFile(BaseModel):
         Encoding used when the file was read.
     encoding_confidence : float
         Confidence score of the encoding detection.
-    sep : str
+    delimiter : str
         Field separator used to parse ``rows``.
+    delimiter_confidence : float
+        Confidence score of the delimiter detection.
+    delimiter_method : str
+        Method used to detect the delimiter.
     quotechar : str
         Quote character recognised during parsing.
     headers : list of str
@@ -40,10 +44,19 @@ class CSVFile(BaseModel):
     """
 
     path: Path
+    
     encoding: str
     encoding_confidence: float = Field(ge=0.0, le=1.0)
-    sep: str
+    encoding_method: str
+    
+    delimiter: str = Field(validation_alias=AliasChoices('delimiter', 'sep'))
+    delimiter_confidence: float = Field(ge=0.0, le=1.0)
+    delimiter_method: str
+    
     quotechar: str | None
+    quotechar_confidence: float = Field(ge=0.0, le=1.0)
+    quotechar_method: str
+    
     headers: list[str]
     rows: list[list[str]]
     data_row_count: int = 0
@@ -52,7 +65,6 @@ class CSVFile(BaseModel):
     def _set_data_row_count(self) -> 'CSVFile':
         self.data_row_count = len(self.rows)
         return self
-    
     
     def to_pandas(self) -> 'pd.DataFrame':
         """
@@ -202,7 +214,11 @@ class DiagnosticReport(BaseModel):
     ...     encoding='utf-8',
     ...     encoding_confidence=0.99,
     ...     delimiter=';',
+    ...     delimiter_confidence=0.95,
+    ...     delimiter_method='detector',
     ...     quotechar='"',
+    ...     quotechar_confidence=0.98,
+    ...     quotechar_method='detector',
     ...     column_count=10,
     ...     row_count=963,
     ...     issues=[],
@@ -215,10 +231,19 @@ class DiagnosticReport(BaseModel):
     """
 
     file_path: Path | Literal['<stdin>']
+    
     encoding: str = Field(min_length=1)
     encoding_confidence: float = Field(ge=0.0, le=1.0)
+    encoding_method: str = Field(min_length=1)
+    
     delimiter: str = Field(min_length=1)
+    delimiter_confidence: float = Field(ge=0.0, le=1.0)
+    delimiter_method: str = Field(min_length=1)
+    
     quotechar: str = Field(min_length=1, max_length=1)
+    quotechar_confidence: float = Field(ge=0.0, le=1.0)
+    quotechar_method: str = Field(min_length=1)
+    
     column_count: int = Field(ge=0)
     row_count: int = Field(ge=0)
     issues: list[Issue] = Field(default_factory=list)
@@ -248,10 +273,6 @@ class DiagnosticReport(BaseModel):
             ),
         )
         return self
- 
-    # ------------------------------------------------------------------
-    # Computed properties
-    # ------------------------------------------------------------------
  
     @property
     def error_count(self) -> int:

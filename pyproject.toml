@@ -9,7 +9,7 @@ description = "Read, inspect and rewrite malformed CSV files with automatic enco
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-authors = [{ name = "Your Name", email = "you@example.com" }]
+authors = [{ name = "Vinícius Machado", email = "viniciusfm1@outlook.com" }]
 keywords = ["csv", "data", "encoding", "parser", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",

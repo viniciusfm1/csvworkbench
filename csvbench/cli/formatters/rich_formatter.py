@@ -136,10 +136,16 @@ class RichFormatter(BaseFormatter):
             ('📁 File', report.display_path),
             ('🔤 Encoding', (
                 f'{report.encoding}  '
-                f'[dim]({report.encoding_confidence * 100:.0f}% confidence)[/dim]'
+                f'[dim]({report.encoding_confidence * 100:.0f}% confidence - {report.encoding_method})[/dim]'
             )),
-            ('🔀 Separator', repr(report.delimiter)),
-            ('💬 Quotechar', repr(report.quotechar)),
+            ('🔀 Separator', (
+                f'{repr(report.delimiter)}  '
+                f'[dim]({report.delimiter_confidence * 100:.0f}% confidence - {report.delimiter_method})[/dim]'
+            )),
+            ('💬 Quotechar', (
+                f'{repr(report.quotechar)}  '
+                f'[dim]({report.quotechar_confidence * 100:.0f}% confidence - {report.quotechar_method})[/dim]'
+            )),
             ('📊 Columns', str(report.column_count)),
             ('📈 Lines', str(report.row_count)),
             ('❌ Errors', _coloured_count(report.error_count, 'red')),
@@ -229,7 +235,6 @@ def _severity_label(severity: Severity) -> Text:
     }
     label, style = _styles[severity]
     return Text(label, style=style)
-
 
 def _coloured_count(count: int, colour: str) -> str:
     """Return a coloured markup string for a numeric count.

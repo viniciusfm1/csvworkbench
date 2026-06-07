@@ -49,7 +49,7 @@ class EncodingResult(BaseModel):
     name: str
     confidence: float = Field(ge=0.0, le=1.0)
     bom_detected: bool = False
-    method: Literal['bom', 'charset_normalizer', 'chardet', 'fallback']
+    method: Literal['bom', 'charset_normalizer', 'chardet', 'fallback', 'override']
 
 
 class EncodingDetector:
@@ -63,9 +63,7 @@ class EncodingDetector:
         self.default_fallback = default_fallback
 
     def detect(self, path: Path | str) -> EncodingResult:
-        path = Path(path)
-        if not path.exists():
-            raise FileNotFoundError(path)
+
         raw = path.read_bytes()[:self.sample_size]
 
         return (

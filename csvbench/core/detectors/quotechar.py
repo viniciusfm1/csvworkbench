@@ -225,7 +225,7 @@ class TextDelimiterDetector:
     def detect(
         self,
         path: Path | str,
-        encoding_result: str,
+        encoding: str,
         sep: str
     ) -> TextDelimiterResult:
         """
@@ -258,7 +258,7 @@ class TextDelimiterDetector:
         if not path.exists():
             raise FileNotFoundError(path)
 
-        sample = read_sample(path=path, encoding=encoding_result, max_lines=self.max_lines)
+        sample = read_sample(path=path, encoding=encoding, max_lines=self.max_lines)
         lines = [line for line in sample.splitlines() if line.strip()]
 
         if not lines:

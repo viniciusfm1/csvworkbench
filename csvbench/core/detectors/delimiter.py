@@ -48,7 +48,7 @@ class DelimiterDetector:
         self.candidates = candidates
         self.max_lines = max_lines
 
-    def detect(self, path: Path | str, encoding_result: str) -> DelimiterResult:
+    def detect(self, path: Path | str, encoding: str) -> DelimiterResult:
         """
         Detect the delimiter of *path*.
 
@@ -74,7 +74,7 @@ class DelimiterDetector:
         if not path.exists():
             raise FileNotFoundError(path)
         
-        sample = read_sample(path=path, encoding=encoding_result, max_lines=self.max_lines)
+        sample = read_sample(path=path, encoding=encoding, max_lines=self.max_lines)
         return self._try_sniffer(sample=sample)
     
     def _try_sniffer(self, sample: str) -> DelimiterResult:
