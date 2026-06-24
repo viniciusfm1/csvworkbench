@@ -48,14 +48,14 @@ docs = [
 csvbench = "csvbench.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/youruser/csvbench"
-Issues = "https://github.com/youruser/csvbench/issues"
+Homepage = "https://github.com/viniciusfm1/csvbench"
+Issues = "https://github.com/viniciusfm1/csvbench/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["csvbench*"]
 
-[tool.ruff]
+[tool.ruff.lint]
 target-version = "py311"
 line-length = 88
 select = ["E", "F", "I", "UP", "B", "SIM"]
