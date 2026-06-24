@@ -26,6 +26,16 @@ Battle-tested in production? Probably not. But you're welcome to try and to cont
 
 ---
 
+## Installation
+
+```bash
+pip install csvbench
+```
+
+Requires Python 3.11+.
+
+---
+
 ## Usage
 
 ### CLI
