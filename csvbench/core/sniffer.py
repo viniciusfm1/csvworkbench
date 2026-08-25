@@ -4,6 +4,7 @@ import re
 import math
 from dataclasses import dataclass
 from csvbench.core.detectors.delimiter import DelimiterResult
+from csvbench.core.parser.record_splitter import RecordSplitter
 
 
 _SINGLE_CHAR_CANDIDATES: list[str] = [',', ';', '|', '\t', '\x07']
@@ -18,6 +19,8 @@ _DEFAULT_WEIGHTS: dict[str, float] = {
     'quoting':     0.2,
 }
 
+_MIN_MEAN_OCCURRENCES = 1.0
+_MIN_RECORD_COVERAGE = 0.5
 
 @dataclass
 class _CandidateScore:
@@ -131,7 +134,8 @@ class DelimiterSniffer:
         ----------
         sample : str
             Plain text sample of the CSV file, typically the first
-            ``N`` lines produced by :meth:`DelimiterDetector._read_sample`.
+            ``N`` logical records produced by
+            :func:`csvbench.core.utils.read_record_sample`.
 
         Returns
         -------
@@ -142,7 +146,7 @@ class DelimiterSniffer:
         Raises
         ------
         ValueError
-            If *sample* is empty or contains no non-empty lines.
+            If *sample* is empty or contains no non-empty records.
 
         Examples
         --------
@@ -151,13 +155,17 @@ class DelimiterSniffer:
         ';'
         """
         
-        lines = [line for line in sample.splitlines() if line.strip()]
+        records = [
+            record
+            for record in RecordSplitter(quotechar='"').split(sample)
+            if record.strip()
+        ]
 
-        if not lines:
-            raise ValueError('Sample is empty or contains no non-empty lines.')
+        if not records:
+            raise ValueError('Sample is empty or contains no non-empty records.')
 
         scores = [
-            self._score_candidate(lines, candidate)
+            self._score_candidate(records, candidate)
             for candidate in self.candidates
         ]
 
@@ -198,6 +206,9 @@ class DelimiterSniffer:
             + quoting     * self.weights['quoting']
         )
 
+        if not self._has_enough_occurrences(lines, candidate):
+            total = 0.0
+
         return _CandidateScore(
             candidate=candidate,
             frequency=frequency,
@@ -206,6 +217,30 @@ class DelimiterSniffer:
             quoting=quoting,
             total=total,
         )
+
+    def _has_enough_occurrences(self, lines: list[str], candidate: str) -> bool:
+        """
+        Return whether *candidate* appears often enough to be a delimiter.
+
+        Parameters
+        ----------
+        lines : list of str
+            Non-empty logical records from the sample.
+        candidate : str
+            Delimiter string to evaluate.
+
+        Returns
+        -------
+        bool
+            ``True`` when the mean occurrence count is at least
+            :data:`_MIN_MEAN_OCCURRENCES` and the candidate appears
+            on at least :data:`_MIN_RECORD_COVERAGE` of the records.
+        """
+        pattern = re.compile(re.escape(candidate))
+        counts = [len(pattern.findall(line)) for line in lines]
+        mean = sum(counts) / len(lines)
+        coverage = sum(1 for count in counts if count > 0) / len(lines)
+        return mean >= _MIN_MEAN_OCCURRENCES and coverage >= _MIN_RECORD_COVERAGE
 
     def _frequency_score(self, lines: list[str], candidate: str) -> float:
         """
@@ -286,7 +321,8 @@ class DelimiterSniffer:
         -------
         float
             Positional regularity score in the range ``[0.0, 1.0]``.
-            Returns ``0.0`` if *candidate* never appears in *lines*.
+            Returns ``0.0`` if *candidate* never appears in *lines*,
+            or if there are too few occurrences to estimate deviation.
         """
         pattern = re.compile(re.escape(candidate))
 
@@ -325,7 +361,7 @@ class DelimiterSniffer:
         ]
 
         if not deviations_per_column:
-            return 1.0
+            return 0.0
 
         mean_deviation = sum(deviations_per_column) / len(deviations_per_column)
         return round(1.0 / (1.0 + mean_deviation), 4)
@@ -351,8 +387,8 @@ class DelimiterSniffer:
         -------
         float
             Quoting score in the range ``[0.0, 1.0]``.
-            Returns ``1.0`` if *candidate* never appears inside quotes.
-            Returns ``0.0`` if *candidate* only appears inside quotes.
+            Returns ``0.0`` if *candidate* never appears in *lines*,
+            or if it only appears inside quotes.
         """
         pattern = re.compile(re.escape(candidate))
         quoted_region = re.compile(r'"[^"]*"')
@@ -363,7 +399,7 @@ class DelimiterSniffer:
         )
 
         if total_occurrences == 0:
-            return 1.0
+            return 0.0
 
         occurrences_outside_quotes = sum(
             len(pattern.findall(quoted_region.sub('', line)))

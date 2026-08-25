@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 from pydantic import BaseModel, Field
 
-from csvbench.core.utils import read_sample
+from csvbench.core.utils import read_record_sample
 
 
 class DelimiterResult(BaseModel):
@@ -74,7 +74,11 @@ class DelimiterDetector:
         if not path.exists():
             raise FileNotFoundError(path)
         
-        sample = read_sample(path=path, encoding=encoding, max_lines=self.max_lines)
+        sample = read_record_sample(
+            path=path,
+            encoding=encoding,
+            max_records=self.max_lines,
+        )
         return self._try_sniffer(sample=sample)
     
     def _try_sniffer(self, sample: str) -> DelimiterResult:
@@ -84,7 +88,8 @@ class DelimiterDetector:
         Parameters
         ----------
         sample : str
-            Raw text sample returned by :meth:`core.utils.read_sample`.
+            Logical-record sample returned by
+            :func:`csvbench.core.utils.read_record_sample`.
 
         Returns
         -------
@@ -96,7 +101,7 @@ class DelimiterDetector:
         Raises
         ------
         ValueError
-            If *sample* is empty or contains no non-empty lines.
+            If *sample* is empty or contains no non-empty records.
         """
         from csvbench.core.sniffer import DelimiterSniffer
 
